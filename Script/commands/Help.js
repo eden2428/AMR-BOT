@@ -2,12 +2,12 @@ const fs = require("fs-extra");
 
 module.exports.config = {
     name: "help",
-    version: "3.0.0",
+    version: "2.0.0",
     hasPermssion: 0,
     credits: "𝐌𝐔𝐍𝐓𝐀𝐒𝐈𝐑 𝐌𝐀𝐇𝐌𝐔𝐃",
-    description: "Shows all available commands",
+    description: "Shows all commands with details",
     commandCategory: "system",
-    usages: "[command name]",
+    usages: "[command name/page number]",
     cooldowns: 5,
     envConfig: {
         autoUnsend: true,
@@ -32,50 +32,85 @@ module.exports.languages = {
 ┃ 🤖 Bot Name: %9
 ┃ 👑 Owner: 𝐌𝐔𝐍𝐓𝐀𝐒𝐈𝐑 𝐌𝐀𝐇𝐌𝐔𝐃
 ╰━━━━━━━━━━━━━━━━╯`,
-        "helpList": "[ There are %1 commands. Use: \"%2help commandName\" to view more. ]"
+        "helpList": "[ There are %1 commands. Use: \"%2help commandName\" to view more. ]",
+        "user": "User",
+        "adminGroup": "Admin Group",
+        "adminBot": "Admin Bot"
     }
 };
 
-module.exports.handleEvent = function () { return; };
+module.exports.handleEvent = function ({ api, event, getText }) {
+    const { commands } = global.client;
+    const { threadID, messageID, body } = event;
+
+    if (!body || typeof body === "undefined" || body.indexOf("help") != 0) return;  
+    const splitBody = body.slice(body.indexOf("help")).trim().split(/\s+/);  
+    if (splitBody.length < 2 || !commands.has(splitBody[1].toLowerCase())) return;  
+
+    const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};  
+    const command = commands.get(splitBody[1].toLowerCase());  
+    const prefix = threadSetting.PREFIX || global.config.PREFIX;  
+
+    const detail = getText("moduleInfo",  
+        command.config.name,  
+        command.config.usages || "Not Provided",  
+        command.config.description || "Not Provided",  
+        command.config.hasPermssion,  
+        command.config.credits || "Unknown",  
+        command.config.commandCategory || "Unknown",  
+        command.config.cooldowns || 0,  
+        prefix,  
+        global.config.BOTNAME || "𝐘𝐎𝐔𝐑 মুরগির বাচ্চা 😘"  
+    );  
+
+    api.sendMessage(detail, threadID, messageID);
+};
 
 module.exports.run = function ({ api, event, args, getText }) {
     const { commands } = global.client;
     const { threadID, messageID } = event;
-    const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};
-    const prefix = threadSetting.PREFIX || global.config.PREFIX;
 
-    // যদি কোনো নির্দিষ্ট command নাম দেওয়া হয়
-    if (args[0] && commands.has(args[0].toLowerCase())) {
-        const command = commands.get(args[0].toLowerCase());
+    const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};  
+    const prefix = threadSetting.PREFIX || global.config.PREFIX;  
 
-        const detail = getText("moduleInfo",
-            command.config.name,
-            command.config.usages || "Not Provided",
-            command.config.description || "Not Provided",
-            command.config.hasPermssion,
-            command.config.credits || "Unknown",
-            command.config.commandCategory || "Unknown",
-            command.config.cooldowns || 0,
-            prefix,
-            global.config.BOTNAME || "𝐘𝐎𝐔𝐑 মুরগির বাচ্চা 😘"
-        );
+    if (args[0] && commands.has(args[0].toLowerCase())) {  
+        const command = commands.get(args[0].toLowerCase());  
 
-        return api.sendMessage(detail, threadID, messageID);
-    }
+        const detailText = getText("moduleInfo",  
+            command.config.name,  
+            command.config.usages || "Not Provided",  
+            command.config.description || "Not Provided",  
+            command.config.hasPermssion,  
+            command.config.credits || "Unknown",  
+            command.config.commandCategory || "Unknown",  
+            command.config.cooldowns || 0,  
+            prefix,  
+            global.config.BOTNAME || "𝐘𝐎𝐔𝐑 মুরগির বাচ্চা 😘"  
+        );  
 
-    // সব command একসাথে দেখানোর জন্য
-    const allCommands = Array.from(commands.values())
-        .filter(cmd => cmd.config && cmd.config.name)
-        .sort((a, b) => a.config.name.localeCompare(b.config.name));
+        return api.sendMessage(detailText, threadID, messageID);
+    }  
 
-    let msg = allCommands.map(cmd => `┃ ✪ ${cmd.config.name} — ${cmd.config.description || "No description"}`).join("\n");
+    const arrayInfo = Array.from(commands.keys())
+        .filter(cmdName => cmdName && cmdName.trim() !== "")
+        .sort();  
+
+    const page = Math.max(parseInt(args[0]) || 1, 1);  
+    const numberOfOnePage = 20;  
+    const totalPages = Math.ceil(arrayInfo.length / numberOfOnePage);  
+    const start = numberOfOnePage * (page - 1);  
+    const helpView = arrayInfo.slice(start, start + numberOfOnePage);  
+
+    let msg = helpView.map(cmdName => `┃ ✪ ${cmdName}`).join("\n");
 
     const text = `╭━━━━━━━━━━━━━━━━╮
-┃ 📜 𝐀𝐋𝐋 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐒 📜
+┃ 📜 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 𝐋𝐈𝐒𝐓 📜
 ┣━━━━━━━━━━━━━━━┫
+┃ 📄 Page: ${page}/${totalPages}
+┃ 🧮 Total: ${arrayInfo.length}
+┣━━━━━━━━━━━━━━━━┫
 ${msg}
 ┣━━━━━━━━━━━━━━━━┫
-┃ 🧮 Total: ${allCommands.length}
 ┃ ⚙ Prefix: ${prefix}
 ┃ 🤖 Bot name: 𝐘𝐎𝐔𝐑 মুরগির বাচ্চা 😘
 ┃ 👑 Owner: 𝐌𝐔𝐍𝐓𝐀𝐒𝐈𝐑 𝐌𝐀𝐇𝐌𝐔𝐃
