@@ -1,15 +1,13 @@
 const fs = require("fs-extra");
-const request = require("request");
-const path = require("path");
 
 module.exports.config = {
     name: "help",
-    version: "2.0.0",
+    version: "3.0.0",
     hasPermssion: 0,
-    credits: "SHAHADAT SAHU",
-    description: "Shows all commands with details",
+    credits: "𝐌𝐔𝐍𝐓𝐀𝐒𝐈𝐑 𝐌𝐀𝐇𝐌𝐔𝐃",
+    description: "Shows all available commands",
     commandCategory: "system",
-    usages: "[command name/page number]",
+    usages: "[command name]",
     cooldowns: 5,
     envConfig: {
         autoUnsend: true,
@@ -32,130 +30,56 @@ module.exports.languages = {
 ┣━━━━━━━━━━━━━━━━┫
 ┃ ⚙ Prefix: %8
 ┃ 🤖 Bot Name: %9
-┃ 👑 Owner: 𝐒𝐇𝐀𝐇𝐀𝐃𝐀𝐓 𝐒𝐀𝐇𝐔
+┃ 👑 Owner: 𝐌𝐔𝐍𝐓𝐀𝐒𝐈𝐑 𝐌𝐀𝐇𝐌𝐔𝐃
 ╰━━━━━━━━━━━━━━━━╯`,
-        "helpList": "[ There are %1 commands. Use: \"%2help commandName\" to view more. ]",
-        "user": "User",
-        "adminGroup": "Admin Group",
-        "adminBot": "Admin Bot"
+        "helpList": "[ There are %1 commands. Use: \"%2help commandName\" to view more. ]"
     }
 };
 
-// এখানে আপনার ফোটো Imgur লিংক করে বসাবেন✅
-
-const helpImages = [
-    "https://i.imgur.com/sxSn1K3.jpeg",
-    "https://i.imgur.com/8WvpgUL.jpeg",
-    "https://i.imgur.com/8WvpgUL.jpeg",
-    "https://i.imgur.com/sxSn1K3.jpeg"
-];
-
-function downloadImages(callback) {
-    let files = [];
-    let completed = 0;
-
-    helpImages.forEach((url, i) => {  
-        let filePath = path.join(__dirname, "cache", `help${i}.jpg`);  
-        files.push(filePath);  
-        request(url).pipe(fs.createWriteStream(filePath)).on("close", () => {  
-            completed++;  
-            if (completed === helpImages.length) callback(files);  
-        });  
-    });
-}
-
-module.exports.handleEvent = function ({ api, event, getText }) {
-    const { commands } = global.client;
-    const { threadID, messageID, body } = event;
-
-    if (!body || typeof body === "undefined" || body.indexOf("help") != 0) return;  
-    const splitBody = body.slice(body.indexOf("help")).trim().split(/\s+/);  
-    if (splitBody.length < 2 || !commands.has(splitBody[1].toLowerCase())) return;  
-
-    const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};  
-    const command = commands.get(splitBody[1].toLowerCase());  
-    const prefix = threadSetting.PREFIX || global.config.PREFIX;  
-
-    const detail = getText("moduleInfo",  
-        command.config.name,  
-        command.config.usages || "Not Provided",  
-        command.config.description || "Not Provided",  
-        command.config.hasPermssion,  
-        command.config.credits || "Unknown",  
-        command.config.commandCategory || "Unknown",  
-        command.config.cooldowns || 0,  
-        prefix,  
-        global.config.BOTNAME || "𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭"  
-    );  
-
-    downloadImages(files => {  
-        const attachments = files.map(f => fs.createReadStream(f));  
-        api.sendMessage({ body: detail, attachment: attachments }, threadID, () => {  
-            files.forEach(f => fs.unlinkSync(f));  
-        }, messageID);  
-    });
-};
+module.exports.handleEvent = function () { return; };
 
 module.exports.run = function ({ api, event, args, getText }) {
     const { commands } = global.client;
     const { threadID, messageID } = event;
+    const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};
+    const prefix = threadSetting.PREFIX || global.config.PREFIX;
 
-    const threadSetting = global.data.threadData.get(parseInt(threadID)) || {};  
-    const prefix = threadSetting.PREFIX || global.config.PREFIX;  
+    // যদি কোনো নির্দিষ্ট command নাম দেওয়া হয়
+    if (args[0] && commands.has(args[0].toLowerCase())) {
+        const command = commands.get(args[0].toLowerCase());
 
-    if (args[0] && commands.has(args[0].toLowerCase())) {  
-        const command = commands.get(args[0].toLowerCase());  
+        const detail = getText("moduleInfo",
+            command.config.name,
+            command.config.usages || "Not Provided",
+            command.config.description || "Not Provided",
+            command.config.hasPermssion,
+            command.config.credits || "Unknown",
+            command.config.commandCategory || "Unknown",
+            command.config.cooldowns || 0,
+            prefix,
+            global.config.BOTNAME || "𝐘𝐎𝐔𝐑 মুরগির বাচ্চা 😘"
+        );
 
-        const detailText = getText("moduleInfo",  
-            command.config.name,  
-            command.config.usages || "Not Provided",  
-            command.config.description || "Not Provided",  
-            command.config.hasPermssion,  
-            command.config.credits || "Unknown",  
-            command.config.commandCategory || "Unknown",  
-            command.config.cooldowns || 0,  
-            prefix,  
-            global.config.BOTNAME || "𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭"  
-        );  
+        return api.sendMessage(detail, threadID, messageID);
+    }
 
-        downloadImages(files => {  
-            const attachments = files.map(f => fs.createReadStream(f));  
-            api.sendMessage({ body: detailText, attachment: attachments }, threadID, () => {  
-                files.forEach(f => fs.unlinkSync(f));  
-            }, messageID);  
-        });  
-        return;  
-    }  
+    // সব command একসাথে দেখানোর জন্য
+    const allCommands = Array.from(commands.values())
+        .filter(cmd => cmd.config && cmd.config.name)
+        .sort((a, b) => a.config.name.localeCompare(b.config.name));
 
-    const arrayInfo = Array.from(commands.keys())
-        .filter(cmdName => cmdName && cmdName.trim() !== "")
-        .sort();  
-
-    const page = Math.max(parseInt(args[0]) || 1, 1);  
-    const numberOfOnePage = 20;  
-    const totalPages = Math.ceil(arrayInfo.length / numberOfOnePage);  
-    const start = numberOfOnePage * (page - 1);  
-    const helpView = arrayInfo.slice(start, start + numberOfOnePage);  
-
-    let msg = helpView.map(cmdName => `┃ ✪ ${cmdName}`).join("\n");
+    let msg = allCommands.map(cmd => `┃ ✪ ${cmd.config.name} — ${cmd.config.description || "No description"}`).join("\n");
 
     const text = `╭━━━━━━━━━━━━━━━━╮
-┃ 📜 𝐂𝐎𝐌𝐌𝐀𝐍𝐃 𝐋𝐈𝐒𝐓 📜
+┃ 📜 𝐀𝐋𝐋 𝐂𝐎𝐌𝐌𝐀𝐍𝐃𝐒 📜
 ┣━━━━━━━━━━━━━━━┫
-┃ 📄 Page: ${page}/${totalPages}
-┃ 🧮 Total: ${arrayInfo.length}
-┣━━━━━━━━━━━━━━━━┫
 ${msg}
 ┣━━━━━━━━━━━━━━━━┫
+┃ 🧮 Total: ${allCommands.length}
 ┃ ⚙ Prefix: ${prefix}
-┃ 🤖 Bot Name: ${global.config.BOTNAME || "𝐒𝐡𝐚𝐡𝐚𝐝𝐚𝐭 𝐂𝐡𝐚𝐭 𝐁𝐨𝐭"}
-┃ 👑 Owner: 𝐒𝐇𝐀𝐇𝐀𝐃𝐀𝐓 𝐒𝐀𝐇𝐔
+┃ 🤖 Bot name: 𝐘𝐎𝐔𝐑 মুরগির বাচ্চা 😘
+┃ 👑 Owner: 𝐌𝐔𝐍𝐓𝐀𝐒𝐈𝐑 𝐌𝐀𝐇𝐌𝐔𝐃
 ╰━━━━━━━━━━━━━━━━╯`;
 
-    downloadImages(files => {  
-        const attachments = files.map(f => fs.createReadStream(f));  
-        api.sendMessage({ body: text, attachment: attachments }, threadID, () => {  
-            files.forEach(f => fs.unlinkSync(f));  
-        }, messageID);  
-    });  
+    api.sendMessage(text, threadID, messageID);
 };
